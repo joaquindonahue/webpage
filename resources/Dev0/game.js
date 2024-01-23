@@ -48,6 +48,9 @@ Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
+var currentPimpleX;
+var currentPimpleY;
+
 PS.init = function( system, options ) {
 	// Uncomment the following code line
 	// to verify operation:
@@ -64,7 +67,17 @@ PS.init = function( system, options ) {
 	// Uncomment the following code line and change
 	// the x and y parameters as needed.
 
-	// PS.gridSize( 8, 8 );
+	PS.gridSize( 16, 16 );
+	PS.color ( PS.ALL, PS.ALL, 250, 215, 190);
+	PS.border (PS.ALL, PS.ALL, 0);
+	currentPimpleX = PS.random( 13 ) + 1;
+	currentPimpleY = PS.random( 13 ) + 1;
+
+	PS.color (currentPimpleX, currentPimpleY, 240, 73, 31);
+	PS.color (currentPimpleX - 1, currentPimpleY, 240, 144, 120);
+	PS.color (currentPimpleX + 1, currentPimpleY, 240, 144, 120);
+	PS.color (currentPimpleX, currentPimpleY - 1, 240, 144, 120);
+	PS.color (currentPimpleX, currentPimpleY + 1, 240, 144, 120);
 
 	// This is also a good place to display
 	// your game title or a welcome message
@@ -72,7 +85,7 @@ PS.init = function( system, options ) {
 	// Uncomment the following code line and
 	// change the string parameter as needed.
 
-	// PS.statusText( "Game" );
+	PS.statusText( "Pop them!" );
 
 	// Add any other initialization code you need here.
 };
@@ -87,11 +100,25 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
+
 PS.touch = function( x, y, data, options ) {
 	// Uncomment the following code line
 	// to inspect x/y parameters:
 
 	// PS.debug( "PS.touch() @ " + x + ", " + y + "\n" );
+	
+	if(x == currentPimpleX && y == currentPimpleY)
+	{
+		PS.color ( PS.ALL, PS.ALL, 250, 215, 190);
+		PS.audioPlay( "fx_squish" );
+		currentPimpleX = PS.random( 13 ) + 1;
+		currentPimpleY = PS.random( 13 ) + 1;
+		PS.color (currentPimpleX, currentPimpleY, 240, 73, 31);
+		PS.color (currentPimpleX - 1, currentPimpleY, 240, 144, 120);
+		PS.color (currentPimpleX + 1, currentPimpleY, 240, 144, 120);
+		PS.color (currentPimpleX, currentPimpleY - 1, 240, 144, 120);
+		PS.color (currentPimpleX, currentPimpleY + 1, 240, 144, 120);
+	}
 
 	// Add code here for mouse clicks/touches
 	// over a bead.

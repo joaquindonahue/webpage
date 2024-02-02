@@ -72,6 +72,7 @@ PS.init = function( system, options ) {
 
 	PS.statusText("Puzzle");
 	PS.gridSize( 21, 22 );
+	PS.border (PS.ALL, PS.ALL, 0);
 
 	for(var i = 0; i < 21; i++)
 	{

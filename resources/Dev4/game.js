@@ -38,20 +38,14 @@ If you don't use JSHint (or are using it with a configuration file), you can saf
 
 "use strict"; // Do NOT remove this directive!
 
-
-var handImage = new Image();
-Image.src = "C:\Users\quiqu\Desktop\Website\resources\Dev4\pinch.png";
-
-var hand = PS.spriteImage(handImage);
-//var hand = PS.spriteSolid(2,1);
-var handX = 0;
-var handY = 0;
+var LEVEL = 1;
 var ENTITIES = 0;
 var ALIENS = 0;
 var BOMBS = 0;
 var SHIPS = 0;
-var STILLTOUCHING = 0;
-var COUNTER = 0;
+var COUNTER = 10;
+var TOUCHX;
+var TOUCHY;
 
 
 /*
@@ -85,10 +79,10 @@ PS.init = function( system, options ) {
 	PS.border(PS.ALL, PS.ALL, 0);
 	
 	
-	setInterval(PS.newEntity, 1500);
+	setInterval(PS.newEntity, 1200);
 	setInterval(PS.moveAliens, 1000);
-	setInterval(PS.moveBombs, 500);
 	setInterval(PS.moveShips, 500);
+	setInterval(PS.moveBombs, 500);
 
 	// This is also a good place to display
 	// your game title or a welcome message
@@ -113,32 +107,39 @@ This function doesn't have to do anything. Any value returned is ignored.
 
 
 PS.touch = function( x, y, data, options ) {
-	if((x - 1) != -1){
-		if(PS.glyph(x - 1, y) != ""){	
-			if(PS.data(x - 1, y) == "ALIEN"){
-				PS.glyph(x - 1, y, "");
-				PS.data(x - 1, y, 0);
-				COUNTER--;
-				PS.statusText(COUNTER + " to until level!");
-				ENTITIES--;
-				ALIENS--;
-			}
-			else if(PS.data(x - 1, y) == "SHIP"){
-				PS.glyph(x - 1, y, "");
-				PS.data(x - 1, y, 0);
-				COUNTER = COUNTER - 3;
-				PS.statusText(COUNTER + " to until level!");
-				ENTITIES--;
-				SHIPS--;
-			}
-			else if(PS.data(x - 1, y) == "BOMB"){
-				//PS.reset();
-				PS.glyph(x - 1, y, "");
-				PS.data(x - 1, y, 0);
-				ENTITIES--;
-				BOMBS--;
-			}
+	if(PS.data(x, y) != "LAVA"){
+		PS.color(x, y, 250, 222, 80);	
+		TOUCHX = x;
+		TOUCHY = y;
+	}	
+	if(PS.glyph(x , y) != ""){	
+		if(PS.data(x , y) == "ALIEN"){
+			PS.glyph(x, y, "");
+			PS.data(x, y, 0);
+			PS.audioPlay( "fx_zurp" );
+			COUNTER--;
+			PS.statusText(COUNTER + " until next level!");
+			ENTITIES--;
+			ALIENS--;
 		}
+		else if(PS.data(x, y) == "SHIP"){
+			PS.glyph(x, y, "");
+			PS.data(x, y, 0);
+			PS.audioPlay( "fx_beep");
+			COUNTER = COUNTER - 3;
+			PS.statusText(COUNTER + " until next level!");
+			ENTITIES--;
+			SHIPS--;
+		}
+		else if(PS.data(x, y) == "BOMB"){
+			PS.audioPlay("fx_blast4");
+			PS.reset();
+		}
+	}
+	if(COUNTER <= 0){
+		LEVEL++;
+		PS.audioPlay("fx_powerup4");
+		PS.reset();
 	}
 };
 
@@ -153,6 +154,9 @@ This function doesn't have to do anything. Any value returned is ignored.
 */
 
 PS.release = function( x, y, data, options ) {
+	if(PS.data(x, y) != "LAVA"){
+		PS.color(TOUCHX, TOUCHY, PS.COLOR_WHITE);		
+	}	
 };
 
 /*
@@ -170,14 +174,21 @@ PS.enter = function( x, y, data, options ) {
 
 	// PS.debug( "PS.enter() @ " + x + ", " + y + "\n" );
 
-	handX = x;
-	handY = y;
-
-	if(x < 1){
-		handX = 1;
+	if(PS.color(x, y) == PS.COLOR_RED){
+		PS.audioPlay("fx_shoot7");
+		PS.reset();
 	}
-	
-	PS.spriteMove(hand, handX - 1, handY);
+	else{
+		var w = {
+			top : 3,
+			left : 0,
+			bottom : 3,
+			right : 3
+		}
+
+		PS.border(x, y, w);
+		PS.borderColor(x, y, 250, 222, 80);
+ 	}
 
 	// Add code here for when the mouse cursor/touch enters a bead.
 };
@@ -195,6 +206,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.exit = function( x, y, data, options ) {
 	// Uncomment the following code line to inspect x/y parameters:
 
+	PS.border(x, y, 0);
 	// PS.debug( "PS.exit() @ " + x + ", " + y + "\n" );
 
 	// Add code here for when the mouse cursor/touch exits a bead.
@@ -273,7 +285,7 @@ PS.input = function( sensors, options ) {
 };
 
 PS.newEntity = function(){
-	if(ENTITIES < 20){
+	if(ENTITIES < 20 && LEVEL != 4){
 		var randomY = (PS.random(25) - 1);
 		var randomX = (PS.random(25) - 1);
 		var randomEntity = PS.random(20);
@@ -284,7 +296,7 @@ PS.newEntity = function(){
 				PS.data(randomX, randomY, "ALIEN");
 				ALIENS++;
 			} 
-			else if (randomEntity <= 18 && BOMBS < 8) {
+			else if (randomEntity <= 18 && BOMBS < 8 && LEVEL > 1) {
 				PS.glyph(randomX, randomY, 128163);
 				PS.data(randomX, randomY, "BOMB");
 				BOMBS++;
@@ -404,4 +416,173 @@ PS.moveShips = function(){
 			}
 		}
 	}
+}
+
+PS.reset = function(){
+	if(LEVEL == 1){
+		COUNTER = 10;
+		ENTITIES = 0;
+		ALIENS = 0;
+		BOMBS = 0;
+		SHIPS = 0;
+		PS.glyph(PS.ALL, PS.ALL, "");
+		PS.data(PS.ALL, PS.ALL, "");
+	}
+	else if(LEVEL == 2){
+		COUNTER = 15;
+		PS.statusText(COUNTER + " until next level!");
+		ENTITIES = 0;
+		ALIENS = 0;
+		BOMBS = 0;
+		SHIPS = 0;
+		PS.glyph(PS.ALL, PS.ALL, "");
+		PS.data(PS.ALL, PS.ALL, "");
+
+		PS.color(PS.ALL, PS.ALL, PS.COLOR_WHITE);
+
+		var map = [
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		];
+	
+		var x, y, data;
+	
+		 for (y = 0; y < 25; y += 1 ) {
+			 for (x = 0; x < 25; x += 1 ) {
+				data = map [ ( y * 25) + x ];
+				if( data === 1){
+					PS.color( x, y, PS.COLOR_RED);
+					PS.data( x, y, "LAVA");
+				}
+			 }
+		 }
+	}
+
+	else if(LEVEL == 3){
+		COUNTER = 15;
+		PS.statusText(COUNTER + " until next level!");
+		ENTITIES = 0;
+		ALIENS = 0;
+		BOMBS = 0;
+		SHIPS = 0;
+		PS.glyph(PS.ALL, PS.ALL, "");
+		PS.data(PS.ALL, PS.ALL, "");
+
+		PS.color(PS.ALL, PS.ALL, PS.COLOR_WHITE);
+
+		var map = [
+			1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,		
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,  
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+		];
+	
+		var x, y, data;
+	
+		 for (y = 0; y < 25; y += 1 ) {
+			 for (x = 0; x < 25; x += 1 ) {
+				data = map [ ( y * 25) + x ];
+				if( data === 1){
+					PS.color( x, y, PS.COLOR_RED);
+					PS.data( x, y, "LAVA");
+				}
+			 }
+		 }
+	}
+	else if(LEVEL == 4){
+		COUNTER = 999;
+		PS.statusText("YOU WIN!");
+		ENTITIES = 0;
+		ALIENS = 0;
+		BOMBS = 0;
+		SHIPS = 0;
+		PS.glyph(PS.ALL, PS.ALL, "");
+		PS.data(PS.ALL, PS.ALL, "");
+
+		PS.color(PS.ALL, PS.ALL, PS.COLOR_WHITE);
+
+		var map = [
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1,		
+			1, 0, 0, 0 ,0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		];
+	
+		var x, y, data;
+	
+		 for (y = 0; y < 25; y += 1 ) {
+			 for (x = 0; x < 25; x += 1 ) {
+				data = map [ ( y * 25) + x ];
+				if( data === 1){
+					PS.color( x, y, PS.COLOR_RED);
+					PS.data( x, y, "LAVA");
+				}
+			 }
+		 }
+	}	 
 }

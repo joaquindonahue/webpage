@@ -126,7 +126,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 
 
 PS.touch = function( x, y, data, options ) {
-	if(PS.data(x, y) != "LAVA"){
+	if(PS.data(x, y) != "LAVA" && LEVEL != 5){
 		PS.color(x, y, 250, 222, 80);	
 		TOUCHX = x;
 		TOUCHY = y;
@@ -884,17 +884,16 @@ PS.countCrush = function(){
 		for (y = lHandY; y < rHandY; y += 1 ) {
 			for (x = lHandX; x < rHandX; x += 1 ) {
 				PS.color(x, y, 174, 81, 240);
-				PS.data(x, y, "CRUSHED");
-				if(PS.data(x, y) != "KEY"){
-					PS.glyph(x, y, "");
-				}
 				if(MOUSEX == x && MOUSEY == y){
 					PS.audioPlay("fx_shoot7");
 					PS.reset();
 				}
 			}
 		}
-
+		PS.glyph(4, 6, "");
+		PS.glyph(5, 5, "");
+		PS.glyph(4, 5, "");
+		PS.glyph(5, 6, "");
 	}
 	else if(BEEP_COUNTER == 3){
 		PS.introTimers(3);
@@ -904,7 +903,6 @@ PS.countCrush = function(){
 				if(rHandY != 11){
 					PS.color(x, y, 31, 27, 36);
 					PS.border(x, y, 0);
-					PS.data(x, y, "");
 				}
 				else{
 					PS.color(x, y, PS.COLOR_RED);

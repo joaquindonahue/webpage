@@ -885,7 +885,9 @@ PS.countCrush = function(){
 			for (x = lHandX; x < rHandX; x += 1 ) {
 				PS.color(x, y, 174, 81, 240);
 				PS.data(x, y, "CRUSHED");
-				PS.glyph(x, y, "");
+				if(PS.data(x, y) != "KEY"){
+					PS.glyph(x, y, "");
+				}
 				if(MOUSEX == x && MOUSEY == y){
 					PS.audioPlay("fx_shoot7");
 					PS.reset();
